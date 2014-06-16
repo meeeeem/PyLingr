@@ -11,6 +11,8 @@ class Lingr(object):
     def __init__(self, username, password):
         self.username = username
         self.password = password
+        self.nickname = None
+
         self.counter = 0
 
     def stream(self, room):
@@ -93,8 +95,15 @@ class Lingr(object):
 
         return
 
-    def say(self, room=None):
-        
+    def say(self, room, nickname, text):
+        query = {'sessison': self.session,
+                 'room': room,
+                 'nickname': nickname,
+                 'text': text
+                }
+        data = self.url_open('room/say', query)
+        print('say:', data)
+
 
     # EVENT
     def observe(self):
