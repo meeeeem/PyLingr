@@ -1,2 +1,0 @@
-username = 'boku'
-password = 'histandard'

@@ -2,70 +2,72 @@
 
 from urllib import parse, request
 import sys
+import json
 
 
 class Lingr(object):
-    __URL_BASE__ = 'http://lingr.com/api/'
-    __URL_BASE_OBSERVE__ = 'http://lingr.com:8080/api/'
+    ENDPOINT = 'http://lingr.com/api/'
+    ENDPOINT_OBSERVE = 'http://lingr.com:8080/api/'
 
     def __init__(self, username, password):
         self.username = username
         self.password = password
         self.nickname = None
+        self.session = None
+        self.rooms = None
+        self.publicid = None
 
         self.counter = 0
 
-    def stream(self, room):
-        self.create_session()
-        self.get_rooms()
-        self.subscribe(room=room)
+    def __del__(self):
+        self.destroy_session()
 
-        while True:
-            obj = self.observe()
-            if 'events' in obj:
-                for event in obj['events']:
-                    yield event
-
-    def inspect(self, data):
-        if data['status'] is 'ok':
+    def check_status(self, status):
+        if status == 'ok':
             return True
-        elif data['code'] is 'rate_limited':
-            try:
-                self.destroy_session()
-                return False
-            except Exception as e:
-                print('rate limited')
+        else:
+            return False
+
+    def check_room(self, room):
+        if room in self.rooms:
+            return True
+        else:
+            return False
+
 
     '''
     API manage
     '''
     # SESSION
     def create_session(self):
-        query = {'user': self.username,
+        query = {
+                 'user': self.username,
                  'password': self.password
                 }
 
         data = self.url_open('session/create', query)
-
-        if self.inspect(data):
+        if self.check_status(data['status']):
             self.session = data['session']
             self.nickname = data['nickname']
+            self.rooms = self.get_rooms()
 
-            return
-        else:
-            sys.exit()
+        return data
 
     def verify_session(self):
         query = {'session': self.session}
         data = self.url_open('session/verify', query)
 
-        return 
+        self.check_status(data['status'])
+
+        return data
 
     def destroy_session(self):
         query = {'session': self.session}
-        self.url_open('session/destroy', query)
 
-        return
+        data = self.url_open('session/destroy', query)
+        self.check_status(data['status'])
+
+        return data
 
 
     # ROOM
@@ -73,47 +75,84 @@ class Lingr(object):
         query = {'session': self.session}
         data = self.url_open('user/get_rooms', query)
 
-        self.rooms = data['rooms']
-        return self.rooms
+        if self.check_status(data['status']):
+            self.rooms = data['rooms']
 
-    def show(self, room=None):
-        query = {'session': self.session,
-                 'room': self.room
-                }
+        return data
 
-    def subscribe(self, room=None, reset='true'):
-        if not room:
-            room = ','.join(self.rooms)
+    def show(self, room):
+        if self.check_room(room):
+            query = {
+                     'session': self.session,
+                     'room': room
+                    }
+            data = self.url_open('room/show', query)
+            self.check_status(data['status'])
 
-        query = {'session': self.session,
-                 'room': room,
-                 'reset': reset
-                }
-        data = self.url_open('room/subscribe', query)
+            return data
 
-        self.counter = data['counter']
+    def get_archives(self, room, max_msg_id, count):
+        if self.check_room(room):
+            query = {
+                     'session': self.session,
+                     'room': room,
+                     'before': max_msg_id,
+                     'limit': count
+                    }
+            data = self.url_open('room/get_archives', query)
+            self.check_status(data['status'])
 
-        return
+            return data
 
-    def say(self, room, nickname, text):
-        query = {'sessison': self.session,
-                 'room': room,
-                 'nickname': nickname,
-                 'text': text
-                }
-        data = self.url_open('room/say', query)
-        print('say:', data)
+    def subscribe(self, room, reset='true'):
+        if self.check_room(room):
+            query = {
+                     'session': self.session,
+                     'room': room,
+                     'reset': reset
+                    }
+            data = self.url_open('room/subscribe', query)
+            if self.check_status(data['status']):
+                self.counter = data['counter']
 
+            return data
+
+    def unsubscribe(self, room):
+        if self.check_room(room):
+            query = {
+                     'session': self.session,
+                     'room': room
+                    }
+
+            data = self.url_open('room/unsubscribe', query)
+            self.check_status(data['status'])
+
+            return data
+
+    def say(self, room, text):
+        if self.check_room(room):
+            query = {
+                     'session': self.session,
+                     'room': room,
+                     'nickname': self.nickname,
+                     'text': text
+                    }
+            data = self.url_open('room/say', query)
+            self.check_status(data['status'])
+
+            return data
 
     # EVENT
     def observe(self):
-        query = {'session': self.session,
+        query = {
+                 'session': self.session,
                  'counter': self.counter
                 }
         data = self.url_open('event/observe', query)
 
-        if 'counter' in data:
+        if self.check_status(data['status']):
             self.counter = data['counter']
+
         return data
 
 
@@ -123,12 +162,11 @@ class Lingr(object):
     def url_open(self, path, query):
         url = self.get_url(path) + '?' + parse.urlencode(query)
 
-        return eval(request.urlopen(url).read())
+        return json.loads(request.urlopen(url).read().decode('utf-8'))
 
     def get_url(self, path):
-        url = self.__URL_BASE__
+        url = self.ENDPOINT
         if path is 'event/observe':
-            url = self.__URL_BASE_OBSERVE__
+            url = self.ENDPOINT_OBSERVE
 
         return url + path
-
