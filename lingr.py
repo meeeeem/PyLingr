@@ -50,6 +50,7 @@ class Lingr(object):
             self.session = data['session']
             self.nickname = data['nickname']
             self.rooms = self.get_rooms()
+            self.publicid = data['public_id']
 
         return data
 
