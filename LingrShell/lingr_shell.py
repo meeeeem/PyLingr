@@ -87,6 +87,41 @@ class LingrShell(Cmd):
         self.now_room = select_item(self.rooms, 'room')
         self.prompt = '(Lingr) {username}@{room} >>> '.format(username=self.username, room=self.now_room)
 
+    def do_isonline(self, dummy):
+        'Pick up online users: ISONLINE'
+        data = self.lingr.show(self.now_room)
+        members = data['rooms'][0]['roster']['members']
+        for m in members:
+            if m['is_online']:
+                print(m['name'])
+
+    def do_isoffline(self, dummy):
+        'Pick up offline users: ISOFFLINE'
+        data = self.lingr.show(self.now_room)
+        members = data['rooms'][0]['roster']['members']
+        for m in members:
+            if m['is_online'] is False:
+                print(m['name'])
+
+    def do_members(self, dummy):
+        'Pick up members of joined room: MEMBERS'
+        data = self.lingr.show(self.now_room)
+        members = data['rooms'][0]['roster']['members']
+        print('{num} members join in {room}.'.format(num=len(members), room=self.now_room))
+        for m in members:
+            print(m['name'], end='')
+            if m['is_online']:
+                print('*', end='')
+            print('')
+
+    def do_bots(self, dummy):
+        'Pick up bots of joined room: BOTS'
+        data = self.lingr.show(self.now_room)
+        bots = data['rooms'][0]['roster']['bots']
+        print('{num} bots assigned in {room}'.format(num=len(bots), room=self.now_room))
+        for b in bots:
+            print('{bot} is {status}'.format(bot=b['name'], status=b['status']))
+
     def do_bye(self, dummy):
         'exit this LingrShell: BYE'
         print('bye')
