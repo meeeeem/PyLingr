@@ -50,33 +50,50 @@ class LingrShell(Cmd):
         pass
 
     def do_show(self, dummy):
-        'show messages: SHOW'
+        'Show messages: show'
         data = self.lingr.show(self.now_room)
         messages = data['rooms'][0]['messages']
 
         print('=' * 50)
         for m in messages:
             print('{name} > {text}'.format(name=m['nickname'], text=m['text']))
+            print('{time}'.format(time=m['timestamp']))
             print('=' * 50)
 
     def do_chroom(self, key):
-        'select room your joined: CHROOM <room>'
+        'Select room your joined: chroom <room>'
         if key == '' or key not in str(self.rooms.keys()):
             self.now_room = select_item(self.rooms, 'room')
         else:
             self.now_room = self.rooms[int(key)]
         self.prompt = '(Lingr) {username}@{room} >>> '.format(username=self.username, room=self.now_room)
 
+    def do_logs(self, limit):
+        'Display logs(default past 10 posts): logs <count>'
+        data = self.lingr.show(self.now_room)
+        old = data['rooms'][0]['messages'][0]['id']
+        if limit == '':
+            limit = 10
+        print(limit)
+        logs = self.lingr.get_archives(self.now_room, old, limit)
+
+        if logs['status'] == 'ok':
+            for l in logs['messages']:
+                print('{nickname} > {text}'.format(nickname=l['nickname'], text=l['text']))
+                print('{time}'.format(time=l['timestamp']))
+        else:
+            print(logs)
+
     def do_say(self, text):
-        'post <text> to joined room: SAY <text>'
+        'post <text> to joined room: say <text>'
         self.lingr.say(self.now_room, text)
 
     def do_hi(self, dummy):
-        'post "hi" to joined room: HI'
+        'post "hi" to joined room: hi'
         self.lingr.say(self.now_room, 'hi')
 
     def do_chuser(self, username):
-        'Change login user: CHUSER'
+        'Change login user: chuser'
 
         self.lingr.destroy_session()
         self.lingr, self.username, self.password = login(username=username)
@@ -88,7 +105,7 @@ class LingrShell(Cmd):
         self.prompt = '(Lingr) {username}@{room} >>> '.format(username=self.username, room=self.now_room)
 
     def do_isonline(self, dummy):
-        'Pick up online users: ISONLINE'
+        'Pick up online users: isonline'
         data = self.lingr.show(self.now_room)
         members = data['rooms'][0]['roster']['members']
         for m in members:
@@ -96,7 +113,7 @@ class LingrShell(Cmd):
                 print(m['name'])
 
     def do_isoffline(self, dummy):
-        'Pick up offline users: ISOFFLINE'
+        'Pick up offline users: isoffline'
         data = self.lingr.show(self.now_room)
         members = data['rooms'][0]['roster']['members']
         for m in members:
@@ -104,7 +121,7 @@ class LingrShell(Cmd):
                 print(m['name'])
 
     def do_members(self, dummy):
-        'Pick up members of joined room: MEMBERS'
+        'Pick up members of joined room: members'
         data = self.lingr.show(self.now_room)
         members = data['rooms'][0]['roster']['members']
         print('{num} members join in {room}.'.format(num=len(members), room=self.now_room))
@@ -115,7 +132,7 @@ class LingrShell(Cmd):
             print('')
 
     def do_bots(self, dummy):
-        'Pick up bots of joined room: BOTS'
+        'Pick up bots of joined room: bots'
         data = self.lingr.show(self.now_room)
         bots = data['rooms'][0]['roster']['bots']
         print('{num} bots assigned in {room}'.format(num=len(bots), room=self.now_room))
@@ -123,7 +140,7 @@ class LingrShell(Cmd):
             print('{bot} is {status}'.format(bot=b['name'], status=b['status']))
 
     def do_bye(self, dummy):
-        'exit this LingrShell: BYE'
+        'exit this LingrShell: bye'
         print('bye')
         sys.exit()
 
