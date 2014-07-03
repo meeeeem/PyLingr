@@ -54,11 +54,18 @@ class LingrShell(Cmd):
         data = self.lingr.show(self.now_room)
         messages = data['rooms'][0]['messages']
 
-        print('=' * 50)
+        prev_speaker = ''
+
         for m in messages:
-            print('{name} > {text}'.format(name=m['nickname'], text=m['text']))
-            print('{time}'.format(time=m['timestamp']))
-            print('=' * 50)
+            if prev_speaker != m['nickname'] or prev_speaker == '':
+                print('=' * 50)
+                print('{name} >'.format(name=m['nickname']))
+
+            print('{text}'.format(text=m['text']))
+            # TODO: use timedelta
+            #print('{time}'.format(time=m['timestamp']))
+
+            prev_speaker = m['nickname']
 
     def do_chroom(self, key):
         'Select room your joined: chroom <room>'
@@ -77,10 +84,12 @@ class LingrShell(Cmd):
         print(limit)
         logs = self.lingr.get_archives(self.now_room, old, limit)
 
+        print('=' * 50)
         if logs['status'] == 'ok':
             for l in logs['messages']:
                 print('{nickname} > {text}'.format(nickname=l['nickname'], text=l['text']))
                 print('{time}'.format(time=l['timestamp']))
+                print('=' * 50)
         else:
             print(logs)
 
