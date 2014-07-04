@@ -59,7 +59,7 @@ class LingrShell(Cmd):
         for m in messages:
             if prev_speaker != m['nickname'] or prev_speaker == '':
                 print('=' * 50)
-                print('{name} >'.format(name=m['nickname']))
+                print('*{name}* said'.format(name=m['nickname']))
 
             print('{text}'.format(text=m['text']))
             # TODO: use timedelta
@@ -190,7 +190,7 @@ def login(username=None, password=None):
             del l
 
 def select_item(dict_item, flag):
-    print('print select {flag} from below'.format(flag=flag))
+    print('select {flag} from below'.format(flag=flag))
     for k, v in dict_item.items():
         print('{key}: {value}'.format(key=k, value=v))
 
