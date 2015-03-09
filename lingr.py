@@ -92,13 +92,13 @@ class Lingr(object):
 
             return data
 
-    def get_archives(self, room, max_msg_id, count):
+    def get_archives(self, room, max_msg_id, limit):
         if self.check_room(room):
             query = {
                      'session': self.session,
                      'room': room,
                      'before': max_msg_id,
-                     'limit': count
+                     'limit': limit
                     }
             data = self.url_open('room/get_archives', query)
             self.check_status(data['status'])
@@ -143,6 +143,29 @@ class Lingr(object):
 
             return data
 
+    # FAVORITE
+    def favorite_add(self, message):
+        query = {
+                    'session': self.session,
+                    'message': message
+                }
+        data = self.url_open('favorite/add', query)
+        self.check_status(data['status'])
+
+        return data
+
+
+    def favorite_remove(self, message):
+        query = {
+                    'session': self.session,
+                    'message': message
+                }
+        data = self.url_open('favorite/remove', query)
+        self.check_status(data['status'])
+
+        return data
+
+
     # EVENT
     def observe(self):
         query = {
@@ -166,8 +189,5 @@ class Lingr(object):
         return json.loads(request.urlopen(url).read().decode('utf-8'))
 
     def get_url(self, path):
-        url = self.ENDPOINT
-        if path is 'event/observe':
-            url = self.ENDPOINT_OBSERVE
-
+        url = self.ENDPOINT if path is not 'event/observe' else self.ENDPOINT_OBSERVE
         return url + path

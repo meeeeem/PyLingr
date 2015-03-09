@@ -1,1 +1,2 @@
-LingrShell/
+__pycache__
+*.pyc
